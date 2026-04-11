@@ -55,7 +55,7 @@ Provides REST endpoints to save and retrieve configurations using SQLite and Ent
 - Unity 2022 LTS (URP)
 - C#
 - WebGL
-- React 18 + TypeScript
+- React 18 + JavaScript
 - react-unity-webgl
 - Vite
 - .NET 9 Minimal API
