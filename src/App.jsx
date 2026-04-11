@@ -83,12 +83,15 @@ export default function SneakerConfigurator() {
         PARTS.forEach(p => applyColor(p.id, colors[p.id]));
     }, [isLoaded]);
 
+    // At the top of the component, before the return
+    const API = import.meta.env.VITE_API_URL;
+
     // ── Save config to .NET API ───────────────────────────────────────────────
     // -- Save config to .NET API
     const handleSave = async () => {
         setSaving(true);
         try {
-            const res = await fetch("http://localhost:5176/configurations", {
+            const res = await fetch(`${API}/configurations`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 // Field names match .NET ConfigDto exactly
@@ -117,7 +120,7 @@ export default function SneakerConfigurator() {
     const handleLoad = async () => {
         if (!loadInput.trim()) return;
         try {
-            const res = await fetch(`http://localhost:5176/configurations/${loadInput.trim()}`);
+            const res = await fetch(`${API}/configurations/${loadInput.trim()}`);
             if (!res.ok) throw new Error(`Server responded ${res.status}`);
             const data = await res.json();
 
