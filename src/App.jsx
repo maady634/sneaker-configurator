@@ -45,9 +45,9 @@ export default function SneakerConfigurator() {
 
     const { unityProvider, sendMessage, isLoaded, loadingProgression } = useUnityContext({
         loaderUrl: "/unity/Build.loader.js",
-        dataUrl: "/unity/Build.data.br",
-        frameworkUrl: "/unity/Build.framework.js.br",
-        codeUrl: "/unity/Build.wasm.br",
+        dataUrl: "/unity/Build.data",
+        frameworkUrl: "/unity/Build.framework.js",
+        codeUrl: "/unity/Build.wasm",
     });
 
     // ── Notify helper ─────────────────────────────────────────────────────────
