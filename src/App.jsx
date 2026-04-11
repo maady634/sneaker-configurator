@@ -45,9 +45,9 @@ export default function SneakerConfigurator() {
 
     const { unityProvider, sendMessage, isLoaded, loadingProgression } = useUnityContext({
         loaderUrl: "/unity/Build.loader.js",
-        dataUrl: "/unity/Build.data",
-        frameworkUrl: "/unity/Build.framework.js",
-        codeUrl: "/unity/Build.wasm",
+        dataUrl: "/unity/Build.data.br",
+        frameworkUrl: "/unity/Build.framework.js.br",
+        codeUrl: "/unity/Build.wasm.br",
     });
 
     // ── Notify helper ─────────────────────────────────────────────────────────
@@ -84,40 +84,68 @@ export default function SneakerConfigurator() {
     }, [isLoaded]);
 
     // ── Save config to .NET API ───────────────────────────────────────────────
+    // -- Save config to .NET API
     const handleSave = async () => {
         setSaving(true);
         try {
-            const res = await fetch("http://localhost:5000/configurations", {
+            const res = await fetch("http://localhost:5176/configurations", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ colors, finish }),
+                // Field names match .NET ConfigDto exactly
+                body: JSON.stringify({
+                    bodyColor: colors.body,
+                    topColor: colors.top,
+                    coverColor: colors.cover,
+                    laceColor: colors.lace,
+                    finish,
+                }),
             });
+            if (!res.ok) throw new Error(`Server responded ${res.status}`);
             const data = await res.json();
             setSaveId(data.id);
-            notify("Configuration saved — ID copied.");
+            notify("Saved — ID copied to clipboard.");
             navigator.clipboard?.writeText(data.id).catch(() => { });
-        } catch {
-            notify("Save failed — is the API running?");
+        } catch (err) {
+            console.error("Save failed:", err);
+            notify("Save failed — is the API running on :5000?");
         } finally {
             setSaving(false);
         }
     };
 
-    // ── Load config ───────────────────────────────────────────────────────────
+    // -- Load config from .NET API
     const handleLoad = async () => {
         if (!loadInput.trim()) return;
         try {
-            const res = await fetch(`http://localhost:5000/configurations/${loadInput.trim()}`);
+            const res = await fetch(`http://localhost:5176/configurations/${loadInput.trim()}`);
+            if (!res.ok) throw new Error(`Server responded ${res.status}`);
             const data = await res.json();
-            setColors(data.colors);
+
+            // API returns flat fields: bodyColor, topColor, coverColor, laceColor, finish
+            // Map back to the colors shape React uses internally
+            const restored = {
+                body: data.bodyColor,
+                top: data.topColor,
+                cover: data.coverColor,
+                lace: data.laceColor,
+            };
+
+            setColors(restored);
             setFinish(data.finish);
-            PARTS.forEach(p => {
-                sendMessage("Configurator", PARTS.find(x => x.id === p.id).method, data.colors[p.id]);
-            });
-            const f = FINISHES.find(x => x.id === data.finish);
-            if (f && isLoaded) sendMessage("Configurator", f.method);
+
+            // Push every restored color into Unity
+            if (isLoaded) {
+                PARTS.forEach(p => {
+                    sendMessage("Configurator", p.method, restored[p.id]);
+                });
+                // Push finish into Unity
+                const f = FINISHES.find(x => x.id === data.finish);
+                if (f) sendMessage("Configurator", f.method);
+            }
+
             notify("Configuration restored.");
-        } catch {
+        } catch (err) {
+            console.error("Load failed:", err);
             notify("Could not load — check the ID.");
         }
     };
@@ -768,7 +796,7 @@ export default function SneakerConfigurator() {
                     <div className="corner-mark bl" />
                     <div className="corner-mark br" />
 
-                    <span className="canvas-hint">Click & drag to rotate</span>
+                    <span className="canvas-hint">[ Drag to rotate ]</span>
 
                     {/* Unity */}
                     <div className="unity-canvas-wrapper">
